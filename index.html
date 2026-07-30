@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>おもいノート</title>
+<link rel="icon" id="faviconLink">
+<link rel="apple-touch-icon" id="appleTouchIcon">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="おもいノート">
+<meta name="theme-color" content="#232838">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -222,7 +227,7 @@
     z-index:20;
   }
   .tab-item{
-    flex:1; padding:11px 0 9px; text-align:center;
+    flex:1; padding:10px 0 8px; text-align:center;
     background:none; border:none; cursor:pointer;
     font-family:'Zen Kaku Gothic New', sans-serif;
     font-size:11px; color:var(--ink-soft);
@@ -542,6 +547,43 @@ function renderReview(){
   }
   document.getElementById('streakNum').textContent = streak;
 }
+
+// ---- ホーム画面アイコン生成（丸角×コーラル背景×太い白マークでシンプルかつ目立つように） ----
+function roundRectPath(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function makeAppIcon(size){
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  // 背景
+  roundRectPath(ctx, 0, 0, size, size, size*0.22);
+  ctx.fillStyle = '#e2725b';
+  ctx.fill();
+  // 中央の丸（紙面）
+  ctx.beginPath();
+  ctx.arc(size/2, size/2, size*0.34, 0, Math.PI*2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  // 太い「＋」マーク（クイック記録を象徴）
+  ctx.strokeStyle = '#e2725b';
+  ctx.lineWidth = size*0.10;
+  ctx.lineCap = 'round';
+  const m = size*0.36;
+  ctx.beginPath();
+  ctx.moveTo(size/2, m); ctx.lineTo(size/2, size-m);
+  ctx.moveTo(m, size/2); ctx.lineTo(size-m, size/2);
+  ctx.stroke();
+  return c.toDataURL('image/png');
+}
+document.getElementById('appleTouchIcon').href = makeAppIcon(180);
+document.getElementById('faviconLink').href = makeAppIcon(64);
 
 loadData();
 </script>
