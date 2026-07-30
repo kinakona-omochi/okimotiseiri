@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>おもいノート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #eef0f6;
+    --card: #ffffff;
+    --line: #dfe2ec;
+    --ink: #232838;
+    --ink-soft: #767c92;
+    --in-color: #b3812a;   /* 学び・IN：あめ色 */
+    --in-soft: #faf1de;
+    --out-color: #1f7a63;  /* 発信・OUT：深緑 */
+    --out-soft: #dcefe8;
+    --moya-color: #7d5aa6; /* モヤモヤ：藤色 */
+    --moya-soft: #ece4f5;
+    --task-color: #33538f; /* タスク：藍 */
+    --task-soft: #dfe6f5;
+    --accent: #e2725b;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0;
+    background:#0f1320;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+  }
+  .app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    background:var(--bg);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    padding-bottom:74px;
+  }
+
+  header.top{
+    padding:22px 20px 16px;
+    background:var(--card);
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:10;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.16em;
+    color:var(--accent);
+    margin-bottom:4px;
+  }
+  h1{
+    font-family:'Shippori Mincho', serif;
+    font-weight:700;
+    font-size:24px;
+    margin:0;
+    letter-spacing:0.02em;
+  }
+
+  .view{ display:none; padding:16px 20px 8px; }
+  .view.active{ display:block; }
+
+  /* ---- 記録タブ ---- */
+  .type-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .type-btn{
+    padding:12px 8px;
+    border-radius:12px;
+    border:1.5px solid var(--line);
+    background:#fff;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .type-btn .dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; background:var(--line); }
+  .type-btn.active.in{ background:var(--in-soft); border-color:var(--in-color); color:var(--in-color); }
+  .type-btn.active.in .dot{ background:var(--in-color); }
+  .type-btn.active.out{ background:var(--out-soft); border-color:var(--out-color); color:var(--out-color); }
+  .type-btn.active.out .dot{ background:var(--out-color); }
+  .type-btn.active.moya{ background:var(--moya-soft); border-color:var(--moya-color); color:var(--moya-color); }
+  .type-btn.active.moya .dot{ background:var(--moya-color); }
+
+  textarea, input[type=text]{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:11px 13px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:14.5px;
+    color:var(--ink);
+    background:#fff;
+  }
+  textarea{ min-height:56px; resize:none; line-height:1.5; }
+  textarea:focus, input:focus{ outline:none; border-color:var(--accent); }
+
+  .save-row{ display:flex; justify-content:flex-end; margin-top:10px; }
+  .save-btn{
+    padding:10px 24px;
+    border-radius:20px;
+    border:none;
+    background:var(--ink);
+    color:#fff;
+    font-family:'Shippori Mincho', serif;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:0.04em;
+    cursor:pointer;
+  }
+  .save-btn:active{ transform:scale(0.97); }
+
+  .section-title{
+    font-family:'Shippori Mincho', serif;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:20px 0 8px 2px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--line);
+  }
+  .day-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    color:var(--ink-soft);
+    margin:12px 0 5px 2px;
+  }
+  .card-row{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:11px 12px;
+    margin-bottom:7px;
+  }
+  .card-head{ display:flex; align-items:flex-start; gap:9px; }
+  .tag{
+    flex-shrink:0;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    font-weight:600;
+    padding:3px 8px;
+    border-radius:8px;
+    margin-top:1px;
+  }
+  .tag.in{ background:var(--in-soft); color:var(--in-color); }
+  .tag.out{ background:var(--out-soft); color:var(--out-color); }
+  .tag.moya{ background:var(--moya-soft); color:var(--moya-color); }
+  .row-text{ font-size:13.5px; line-height:1.5; white-space:pre-wrap; word-break:break-word; flex:1; }
+  .row-del{ background:none; border:none; color:var(--ink-soft); font-size:15px; cursor:pointer; padding:0 2px; }
+  .row-time{ font-family:'JetBrains Mono', monospace; font-size:9.5px; color:var(--ink-soft); margin-top:5px; margin-left:73px;}
+  .followups{ margin:8px 0 0 8px; padding-left:10px; border-left:2px solid var(--moya-soft); }
+  .followup-item{ font-size:12.5px; color:var(--ink-soft); margin-bottom:5px; line-height:1.5; }
+  .followup-item .ft{ font-family:'JetBrains Mono', monospace; font-size:9.5px; margin-right:6px; }
+  .followup-add{ display:flex; gap:6px; margin-top:6px; margin-left:8px; }
+  .followup-add input{ flex:1; font-size:12.5px; padding:7px 10px; border-radius:8px; }
+  .followup-add button{
+    border:none; background:var(--moya-color); color:#fff; border-radius:8px;
+    padding:0 12px; font-size:12px; font-weight:700; cursor:pointer;
+  }
+  .empty{ text-align:center; color:var(--ink-soft); font-size:13px; padding:26px 10px; font-family:'Shippori Mincho', serif; }
+
+  /* ---- タスクタブ ---- */
+  .task-add{ display:flex; gap:8px; }
+  .task-add input{ flex:1; }
+  .task-add button{
+    flex-shrink:0; border:none; background:var(--task-color); color:#fff;
+    border-radius:12px; padding:0 16px; font-weight:700; font-size:13px; cursor:pointer;
+  }
+  .task-row{
+    background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:11px 12px; margin-bottom:7px; display:flex; align-items:center; gap:10px;
+  }
+  .status-pill{
+    flex-shrink:0;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px; font-weight:700;
+    padding:5px 10px; border-radius:14px;
+    cursor:pointer; border:1.5px solid;
+    white-space:nowrap;
+  }
+  .status-pill.todo{ background:#f2f3f7; color:var(--ink-soft); border-color:var(--line); }
+  .status-pill.doing{ background:var(--task-soft); color:var(--task-color); border-color:var(--task-color); }
+  .status-pill.done{ background:var(--out-soft); color:var(--out-color); border-color:var(--out-color); }
+  .task-text{ flex:1; font-size:13.5px; line-height:1.4; word-break:break-word; }
+  .task-text.done{ text-decoration:line-through; color:var(--ink-soft); }
+
+  /* ---- 振り返りタブ ---- */
+  .stat-card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:12px; }
+  .stat-title{ font-family:'Shippori Mincho', serif; font-size:13px; color:var(--ink-soft); margin-bottom:10px; }
+  .streak-num{ font-family:'JetBrains Mono', monospace; font-size:34px; font-weight:600; color:var(--accent); }
+  .streak-unit{ font-size:12.5px; color:var(--ink-soft); margin-left:4px; }
+  .meter{ position:relative; height:20px; border-radius:10px; overflow:hidden; background:var(--line); margin-top:4px;}
+  .meter-in, .meter-out{ position:absolute; top:0; bottom:0; transition:width .5s ease; }
+  .meter-in{ left:0; background:var(--in-color); }
+  .meter-out{ right:0; background:var(--out-color); }
+  .meter-target{ position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--accent); }
+  .meter-legend{ display:flex; justify-content:space-between; margin-top:7px; font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--ink-soft); }
+  .task-stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; text-align:center; }
+  .task-stat-num{ font-family:'JetBrains Mono', monospace; font-size:20px; font-weight:600; }
+  .task-stat-label{ font-size:10.5px; color:var(--ink-soft); margin-top:2px; }
+
+  /* ---- 下部タブバー ---- */
+  nav.tabbar{
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:480px;
+    background:var(--card);
+    border-top:1px solid var(--line);
+    display:flex;
+    z-index:20;
+  }
+  .tab-item{
+    flex:1; padding:11px 0 9px; text-align:center;
+    background:none; border:none; cursor:pointer;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:11px; color:var(--ink-soft);
+  }
+  .tab-item .shape{ margin:0 auto 4px; width:16px; height:16px; }
+  .tab-item.active{ color:var(--ink); font-weight:700; }
+  .tab-item.active .shape svg{ opacity:1; }
+  .tab-item .shape svg{ opacity:0.45; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="eyebrow" id="eyebrow">CAPTURE</div>
+    <h1 id="viewTitle">記録する</h1>
+  </header>
+
+  <!-- 記録タブ -->
+  <div class="view active" id="view-capture">
+    <div class="type-grid">
+      <button class="type-btn active in" data-type="in"><span class="dot"></span>IN・学んだ</button>
+      <button class="type-btn out" data-type="out"><span class="dot"></span>OUT・発信した</button>
+      <button class="type-btn moya" data-type="moya" style="grid-column:1/3;"><span class="dot"></span>モヤモヤ・考えても仕方ないこと</button>
+    </div>
+    <textarea id="entryText" placeholder="一言でOK"></textarea>
+    <div class="save-row"><button class="save-btn" id="saveEntry">記帳する</button></div>
+
+    <div class="section-title">記録一覧</div>
+    <div id="entryList"><div class="empty">読み込み中…</div></div>
+  </div>
+
+  <!-- タスクタブ -->
+  <div class="view" id="view-task">
+    <div class="task-add">
+      <input type="text" id="taskText" placeholder="やることを入力">
+      <button id="addTask">追加</button>
+    </div>
+    <div class="section-title">タスク一覧</div>
+    <div id="taskList"><div class="empty">読み込み中…</div></div>
+  </div>
+
+  <!-- 振り返りタブ -->
+  <div class="view" id="view-review">
+    <div class="stat-card">
+      <div class="stat-title">記録の継続日数</div>
+      <span class="streak-num" id="streakNum">0</span><span class="streak-unit">日連続</span>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">今週のIN・OUTバランス（目安：IN 3 : OUT 7）</div>
+      <div class="meter">
+        <div class="meter-in" id="meterIn" style="width:0%"></div>
+        <div class="meter-out" id="meterOut" style="width:0%"></div>
+        <div class="meter-target" style="left:30%"></div>
+      </div>
+      <div class="meter-legend">
+        <span>IN <span id="inCount">0</span>件</span>
+        <span>OUT <span id="outCount">0</span>件</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">タスクの状況</div>
+      <div class="task-stat-grid">
+        <div><div class="task-stat-num" style="color:var(--ink-soft)" id="todoNum">0</div><div class="task-stat-label">未着手</div></div>
+        <div><div class="task-stat-num" style="color:var(--task-color)" id="doingNum">0</div><div class="task-stat-label">進行中</div></div>
+        <div><div class="task-stat-num" style="color:var(--out-color)" id="doneNum">0</div><div class="task-stat-label">完了</div></div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="tabbar">
+    <button class="tab-item active" data-view="capture">
+      <span class="shape"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="#232838" stroke-width="1.6"/></svg></span>
+      記録
+    </button>
+    <button class="tab-item" data-view="task">
+      <span class="shape"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="2.5" fill="none" stroke="#232838" stroke-width="1.6"/></svg></span>
+      タスク
+    </button>
+    <button class="tab-item" data-view="review">
+      <span class="shape"><svg viewBox="0 0 16 16"><path d="M8 2 L14 8 L8 14 L2 8 Z" fill="none" stroke="#232838" stroke-width="1.6"/></svg></span>
+      振り返り
+    </button>
+  </nav>
+</div>
+
+<script>
+const STORAGE_KEY = 'omoi_data_v1';
+let data = { logs: [], tasks: [] };
+let currentType = 'in';
+let currentView = 'capture';
+
+const titles = { capture: ['CAPTURE','記録する'], task: ['TASKS','タスク管理'], review: ['REVIEW','振り返り'] };
+
+// ---- タブ切り替え ----
+document.querySelectorAll('.tab-item').forEach(btn => {
+  btn.addEventListener('click', () => switchView(btn.dataset.view));
+});
+function switchView(v){
+  currentView = v;
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.tab-item').forEach(el => el.classList.toggle('active', el.dataset.view===v));
+  document.getElementById('eyebrow').textContent = titles[v][0];
+  document.getElementById('viewTitle').textContent = titles[v][1];
+  if(v === 'review') renderReview();
+}
+
+// ---- タイプ選択 ----
+document.querySelectorAll('.type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentType = btn.dataset.type;
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// ---- 永続化 ----
+async function loadData(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    data = res && res.value ? JSON.parse(res.value) : { logs: [], tasks: [] };
+  }catch(e){
+    data = { logs: [], tasks: [] };
+  }
+  renderEntries();
+  renderTasks();
+}
+async function saveData(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(data), false);
+  }catch(e){ console.error('保存失敗', e); }
+}
+
+function formatDay(d){
+  const days = ['日','月','火','水','木','金','土'];
+  return `${d.getMonth()+1}/${d.getDate()}（${days[d.getDay()]}）`;
+}
+function formatTime(d){
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function typeLabel(t){ return t==='in' ? 'IN' : t==='out' ? 'OUT' : 'モヤモヤ'; }
+
+// ---- 記録：追加 ----
+document.getElementById('saveEntry').addEventListener('click', async () => {
+  const el = document.getElementById('entryText');
+  const text = el.value.trim();
+  if(!text) return;
+  data.logs.unshift({
+    id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    type: currentType,
+    text,
+    ts: new Date().toISOString(),
+    followups: []
+  });
+  el.value = '';
+  renderEntries();
+  await saveData();
+});
+
+async function deleteEntry(id){
+  data.logs = data.logs.filter(e => e.id !== id);
+  renderEntries();
+  await saveData();
+}
+async function addFollowup(id, text){
+  const target = data.logs.find(e => e.id === id);
+  if(!target || !text.trim()) return;
+  target.followups.push({ text: text.trim(), ts: new Date().toISOString() });
+  renderEntries();
+  await saveData();
+}
+
+function renderEntries(){
+  const list = document.getElementById('entryList');
+  if(data.logs.length === 0){
+    list.innerHTML = '<div class="empty">まだ記録がありません</div>';
+    return;
+  }
+  const groups = {}; const order = [];
+  data.logs.forEach(e => {
+    const key = formatDay(new Date(e.ts));
+    if(!groups[key]){ groups[key]=[]; order.push(key); }
+    groups[key].push(e);
+  });
+  let html = '';
+  order.forEach(key => {
+    html += `<div class="day-label">${key}</div>`;
+    groups[key].forEach(e => {
+      html += `
+        <div class="card-row" data-id="${e.id}">
+          <div class="card-head">
+            <span class="tag ${e.type}">${typeLabel(e.type)}</span>
+            <div class="row-text"></div>
+            <button class="row-del" data-id="${e.id}">×</button>
+          </div>
+          <div class="row-time">${formatTime(new Date(e.ts))}</div>
+          ${e.type==='moya' ? `<div class="followups" data-fid="${e.id}"></div>
+            <div class="followup-add">
+              <input type="text" placeholder="後で思ったことを追記" data-fid-input="${e.id}">
+              <button data-fid-btn="${e.id}">追記</button>
+            </div>` : ''}
+        </div>`;
+    });
+  });
+  list.innerHTML = html;
+
+  // テキストは textContent で安全に挿入
+  data.logs.forEach(e => {
+    const row = list.querySelector(`.card-row[data-id="${e.id}"]`);
+    if(!row) return;
+    row.querySelector('.row-text').textContent = e.text;
+    if(e.type === 'moya'){
+      const fWrap = row.querySelector(`.followups[data-fid="${e.id}"]`);
+      if(fWrap && e.followups.length){
+        e.followups.forEach(f => {
+          const d = document.createElement('div');
+          d.className = 'followup-item';
+          const ft = document.createElement('span');
+          ft.className = 'ft';
+          ft.textContent = formatDay(new Date(f.ts)) + ' ' + formatTime(new Date(f.ts));
+          d.appendChild(ft);
+          d.appendChild(document.createTextNode(f.text));
+          fWrap.appendChild(d);
+        });
+      }
+    }
+  });
+
+  list.querySelectorAll('.row-del').forEach(b => b.addEventListener('click', () => deleteEntry(b.dataset.id)));
+  list.querySelectorAll('[data-fid-btn]').forEach(b => {
+    b.addEventListener('click', () => {
+      const id = b.dataset.fidBtn;
+      const input = list.querySelector(`[data-fid-input="${id}"]`);
+      addFollowup(id, input.value);
+      input.value = '';
+    });
+  });
+}
+
+// ---- タスク ----
+document.getElementById('addTask').addEventListener('click', async () => {
+  const input = document.getElementById('taskText');
+  const text = input.value.trim();
+  if(!text) return;
+  data.tasks.unshift({
+    id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    text, status: 'todo', ts: new Date().toISOString()
+  });
+  input.value = '';
+  renderTasks();
+  await saveData();
+});
+
+function cycleStatus(s){ return s==='todo' ? 'doing' : s==='doing' ? 'done' : 'todo'; }
+function statusLabel(s){ return s==='todo' ? '未着手' : s==='doing' ? '進行中' : '完了'; }
+
+async function toggleTaskStatus(id){
+  const t = data.tasks.find(t => t.id === id);
+  if(!t) return;
+  t.status = cycleStatus(t.status);
+  renderTasks();
+  await saveData();
+}
+
+function renderTasks(){
+  const list = document.getElementById('taskList');
+  if(data.tasks.length === 0){
+    list.innerHTML = '<div class="empty">まだタスクがありません</div>';
+    return;
+  }
+  list.innerHTML = '';
+  data.tasks.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'task-row';
+    const pill = document.createElement('button');
+    pill.className = 'status-pill ' + t.status;
+    pill.textContent = statusLabel(t.status);
+    pill.addEventListener('click', () => toggleTaskStatus(t.id));
+    const text = document.createElement('div');
+    text.className = 'task-text' + (t.status==='done' ? ' done' : '');
+    text.textContent = t.text;
+    row.appendChild(pill);
+    row.appendChild(text);
+    list.appendChild(row);
+  });
+}
+
+// ---- 振り返り ----
+function renderReview(){
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7*24*60*60*1000);
+  const weekLogs = data.logs.filter(e => new Date(e.ts) >= weekAgo && e.type !== 'moya');
+  const inCount = weekLogs.filter(e => e.type==='in').length;
+  const outCount = weekLogs.filter(e => e.type==='out').length;
+  const total = inCount + outCount;
+  document.getElementById('meterIn').style.width = (total ? inCount/total*100 : 0) + '%';
+  document.getElementById('meterOut').style.width = (total ? outCount/total*100 : 0) + '%';
+  document.getElementById('inCount').textContent = inCount;
+  document.getElementById('outCount').textContent = outCount;
+
+  document.getElementById('todoNum').textContent = data.tasks.filter(t=>t.status==='todo').length;
+  document.getElementById('doingNum').textContent = data.tasks.filter(t=>t.status==='doing').length;
+  document.getElementById('doneNum').textContent = data.tasks.filter(t=>t.status==='done').length;
+
+  // 連続記録日数
+  const daySet = new Set(data.logs.map(e => {
+    const d = new Date(e.ts);
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  }));
+  let streak = 0;
+  let cursor = new Date();
+  while(true){
+    const key = `${cursor.getFullYear()}-${cursor.getMonth()}-${cursor.getDate()}`;
+    if(daySet.has(key)){ streak++; cursor.setDate(cursor.getDate()-1); }
+    else break;
+  }
+  document.getElementById('streakNum').textContent = streak;
+}
+
+loadData();
+</script>
+</body>
+</html>
