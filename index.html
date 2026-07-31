@@ -45,7 +45,7 @@
     position:relative;
     display:flex;
     flex-direction:column;
-    padding-bottom:52px;
+    padding-bottom:40px;
   }
 
   header.top{
@@ -226,18 +226,34 @@
     background:var(--card);
     border-top:1px solid var(--line);
     display:flex;
+    align-items:center;
+    justify-content:space-around;
+    padding:6px 10px;
     z-index:20;
   }
   .tab-item{
-    flex:1; padding:6px 0 6px; text-align:center;
-    background:none; border:none; cursor:pointer;
-    font-family:'Zen Kaku Gothic New', sans-serif;
-    font-size:9.5px; color:var(--ink-soft);
+    background:none; border:none; cursor:pointer; padding:0;
   }
-  .tab-item .shape{ margin:0 auto 2px; width:13px; height:13px; }
-  .tab-item.active{ color:var(--ink); font-weight:700; }
-  .tab-item.active .shape svg{ opacity:1; }
-  .tab-item .shape svg{ opacity:0.45; }
+  .tab-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:1.4px solid var(--ink-soft);
+    padding:5px 12px;
+    line-height:1;
+  }
+  .tab-badge .txt{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:9.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+    white-space:nowrap;
+  }
+  .tab-badge.circle{ border-radius:999px; }
+  .tab-badge.square{ border-radius:5px; }
+  .tab-badge.diamond{ clip-path:polygon(9% 0%,91% 0%,100% 50%,91% 100%,9% 100%,0% 50%); padding:5px 14px; }
+  .tab-item.active .tab-badge{ background:var(--ink); border-color:var(--ink); }
+  .tab-item.active .tab-badge .txt{ color:#fff; }
 </style>
 </head>
 <body>
@@ -302,16 +318,13 @@
 
   <nav class="tabbar">
     <button class="tab-item active" data-view="capture">
-      <span class="shape"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="#232838" stroke-width="1.6"/></svg></span>
-      記録
+      <span class="tab-badge circle"><span class="txt">記録</span></span>
     </button>
     <button class="tab-item" data-view="task">
-      <span class="shape"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="2.5" fill="none" stroke="#232838" stroke-width="1.6"/></svg></span>
-      タスク
+      <span class="tab-badge square"><span class="txt">タスク</span></span>
     </button>
     <button class="tab-item" data-view="review">
-      <span class="shape"><svg viewBox="0 0 16 16"><path d="M8 2 L14 8 L8 14 L2 8 Z" fill="none" stroke="#232838" stroke-width="1.6"/></svg></span>
-      振り返り
+      <span class="tab-badge diamond"><span class="txt">振り返り</span></span>
     </button>
   </nav>
 </div>
