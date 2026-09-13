@@ -493,7 +493,7 @@ document.getElementById('saveEntry').addEventListener('click', async () => {
     }
   }catch(e){
     console.error(e);
-    if(statusEl) statusEl.textContent = '保存できませんでした';
+    if(statusEl) statusEl.textContent = '保存できませんでした：' + e.message;
   }
 });
 
