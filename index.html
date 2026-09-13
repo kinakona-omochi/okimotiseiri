@@ -26,6 +26,8 @@
     --moya-soft: #ece4f5;
     --task-color: #33538f; /* タスク：藍 */
     --task-soft: #dfe6f5;
+    --diary-color: #a24a5a; /* 日記：えんじ */
+    --diary-soft: #f4dfe3;
     --accent: #e2725b;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
@@ -114,7 +116,8 @@
   textarea{ min-height:56px; resize:none; line-height:1.5; }
   textarea:focus, input:focus{ outline:none; border-color:var(--accent); }
 
-  .save-row{ display:flex; justify-content:flex-end; margin-top:10px; }
+  .save-row{ display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-top:10px; }
+  .save-status{ font-size:11px; color:var(--ink-soft); font-family:'JetBrains Mono', monospace; }
   .save-btn{
     padding:10px 24px;
     border-radius:20px;
@@ -137,6 +140,20 @@
     padding-bottom:6px;
     border-bottom:1px solid var(--line);
   }
+  .filter-row{ display:flex; gap:6px; margin-bottom:10px; }
+  .filter-btn{
+    padding:6px 12px; border-radius:14px; border:1.3px solid var(--line);
+    background:#fff; color:var(--ink-soft); font-size:11.5px; font-weight:600; cursor:pointer;
+  }
+  .filter-btn.active{ background:var(--ink); border-color:var(--ink); color:#fff; }
+  .row-edit{ background:none; border:none; color:var(--ink-soft); font-size:13px; cursor:pointer; padding:0 4px; }
+  .edit-area{ width:100%; font-size:14px; min-height:50px; margin-top:2px; }
+  .edit-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:6px; }
+  .edit-actions button{
+    border:none; border-radius:8px; padding:6px 12px; font-size:11.5px; font-weight:700; cursor:pointer;
+  }
+  .edit-save{ background:var(--ink); color:#fff; }
+  .edit-cancel{ background:#f0f1f5; color:var(--ink-soft); }
   .day-label{
     font-family:'JetBrains Mono', monospace;
     font-size:10.5px;
@@ -164,6 +181,7 @@
   .tag.in{ background:var(--in-soft); color:var(--in-color); }
   .tag.out{ background:var(--out-soft); color:var(--out-color); }
   .tag.moya{ background:var(--moya-soft); color:var(--moya-color); }
+  .tag.diary{ background:var(--diary-soft); color:var(--diary-color); }
   .row-body{ flex:1; min-width:0; }
   .row-text{ font-size:14px; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
   .row-del{ flex-shrink:0; background:none; border:none; color:var(--ink-soft); font-size:16px; cursor:pointer; padding:0 2px; line-height:1; }
@@ -262,6 +280,7 @@
   .tab-badge.circle{ border-radius:999px; }
   .tab-badge.square{ border-radius:7px; }
   .tab-badge.diamond{ clip-path:polygon(9% 0%,91% 0%,100% 50%,91% 100%,9% 100%,0% 50%); padding:10px 24px; }
+  .tab-badge.hexagon{ clip-path:polygon(25% 0%,75% 0%,100% 50%,75% 100%,25% 100%,0% 50%); padding:10px 22px; }
   .tab-item.active .tab-badge{ background:var(--ink); border-color:var(--ink); }
   .tab-item.active .tab-badge .txt{ color:#fff; }
 </style>
@@ -282,9 +301,15 @@
       <button class="type-btn moya" data-type="moya" style="grid-column:1/3;"><span class="dot"></span>モヤモヤ・考えても仕方ないこと</button>
     </div>
     <textarea id="entryText" placeholder="一言でOK"></textarea>
-    <div class="save-row"><button class="save-btn" id="saveEntry">記帳する</button></div>
+    <div class="save-row"><span class="save-status" id="saveStatus"></span><button class="save-btn" id="saveEntry">記帳する</button></div>
 
     <div class="section-title">記録一覧</div>
+    <div class="filter-row">
+      <button class="filter-btn active" data-filter="all">すべて</button>
+      <button class="filter-btn" data-filter="in">IN</button>
+      <button class="filter-btn" data-filter="out">OUT</button>
+      <button class="filter-btn" data-filter="moya">モヤモヤ</button>
+    </div>
     <div id="entryList"><div class="empty">読み込み中…</div></div>
   </div>
 
@@ -296,6 +321,14 @@
     </div>
     <div class="section-title">タスク一覧</div>
     <div id="taskList"><div class="empty">読み込み中…</div></div>
+  </div>
+
+  <!-- 日記タブ -->
+  <div class="view" id="view-diary">
+    <textarea id="diaryText" placeholder="今日のことを3〜4行くらいで" rows="4"></textarea>
+    <div class="save-row"><span class="save-status" id="diarySaveStatus"></span><button class="save-btn" id="saveDiary">書く</button></div>
+    <div class="section-title">日記一覧</div>
+    <div id="diaryList"><div class="empty">読み込み中…</div></div>
   </div>
 
   <!-- 振り返りタブ -->
@@ -326,7 +359,7 @@
     </div>
     <div class="stat-card">
       <div class="stat-title">データのバックアップ</div>
-      <div class="backup-note">ホーム画面のアイコンはブラウザの状態によって記録が消えることがあります。時々「書き出す」でコピーし、メモアプリなどに貼り付けて保管しておくと安心です。</div>
+      <div class="backup-note">記録はデータベースに保存されるので、ホーム画面から開いても消えなくなりました。念のため、時々「書き出す」でコピーし、メモアプリなどにも保管しておくとより安心です。</div>
       <div class="backup-row">
         <button class="backup-btn" id="exportBtn">書き出す（コピー）</button>
         <button class="backup-btn ghost" id="importBtn">読み込む</button>
@@ -343,6 +376,9 @@
     <button class="tab-item" data-view="task">
       <span class="tab-badge square"><span class="txt">タスク</span></span>
     </button>
+    <button class="tab-item" data-view="diary">
+      <span class="tab-badge hexagon"><span class="txt">日記</span></span>
+    </button>
     <button class="tab-item" data-view="review">
       <span class="tab-badge diamond"><span class="txt">振り返り</span></span>
     </button>
@@ -350,12 +386,14 @@
 </div>
 
 <script>
-const STORAGE_KEY = 'omoi_data_v1';
-let data = { logs: [], tasks: [] };
+let data = { logs: [], tasks: [], diary: [] };
 let currentType = 'in';
 let currentView = 'capture';
+let currentFilter = 'all';
+let editingId = null;
+let editingDiaryId = null;
 
-const titles = { capture: ['CAPTURE','記録する'], task: ['TASKS','タスク管理'], review: ['REVIEW','振り返り'] };
+const titles = { capture: ['CAPTURE','記録する'], task: ['TASKS','タスク管理'], diary: ['DIARY','日記'], review: ['REVIEW','振り返り'] };
 
 // ---- タブ切り替え ----
 document.querySelectorAll('.tab-item').forEach(btn => {
@@ -380,21 +418,46 @@ document.querySelectorAll('.type-btn').forEach(btn => {
   });
 });
 
-// ---- 永続化 ----
+// ---- 永続化（Supabase） ----
+const SUPABASE_URL = 'https://gpjoubashlmlzbjxpyft.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_g4TO4HMV88QV4gj2NX5vjw_aakSx67J';
+
+async function sb(path, options={}){
+  const { prefer, ...rest } = options;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...rest,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': prefer || 'return=representation',
+      ...(rest.headers || {})
+    }
+  });
+  if(!res.ok){
+    const t = await res.text();
+    throw new Error(`Supabase error ${res.status}: ${t}`);
+  }
+  const t = await res.text();
+  return t ? JSON.parse(t) : null;
+}
+
 async function loadData(){
   try{
-    const res = await window.storage.get(STORAGE_KEY, false);
-    data = res && res.value ? JSON.parse(res.value) : { logs: [], tasks: [] };
+    const [logs, tasks, diary] = await Promise.all([
+      sb('logs?select=*&order=ts.desc'),
+      sb('tasks?select=*&order=ts.desc'),
+      sb('diary?select=*&order=ts.desc')
+    ]);
+    data.logs = (logs || []).map(r => ({ ...r, followups: r.followups || [] }));
+    data.tasks = tasks || [];
+    data.diary = diary || [];
   }catch(e){
-    data = { logs: [], tasks: [] };
+    console.error('読み込み失敗', e);
   }
   renderEntries();
   renderTasks();
-}
-async function saveData(){
-  try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(data), false);
-  }catch(e){ console.error('保存失敗', e); }
+  renderDiary();
 }
 
 function formatDay(d){
@@ -411,39 +474,68 @@ document.getElementById('saveEntry').addEventListener('click', async () => {
   const el = document.getElementById('entryText');
   const text = el.value.trim();
   if(!text) return;
-  data.logs.unshift({
-    id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
-    type: currentType,
-    text,
-    ts: new Date().toISOString(),
-    followups: []
+  const statusEl = document.getElementById('saveStatus');
+  if(statusEl) statusEl.textContent = '保存中…';
+  try{
+    const [row] = await sb('logs', {
+      method:'POST',
+      body: JSON.stringify({ type: currentType, text, ts: new Date().toISOString(), followups: [] })
+    });
+    data.logs.unshift({ ...row, followups: row.followups || [] });
+    el.value = '';
+    renderEntries();
+    if(statusEl){
+      statusEl.textContent = '保存済み';
+      setTimeout(() => { if(statusEl.textContent === '保存済み') statusEl.textContent = ''; }, 1500);
+    }
+  }catch(e){
+    console.error(e);
+    if(statusEl) statusEl.textContent = '保存できませんでした';
+  }
+});
+
+// ---- フィルター ----
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentFilter = btn.dataset.filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderEntries();
   });
-  el.value = '';
-  renderEntries();
-  await saveData();
 });
 
 async function deleteEntry(id){
-  data.logs = data.logs.filter(e => e.id !== id);
-  renderEntries();
-  await saveData();
+  try{
+    await sb(`logs?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
+    data.logs = data.logs.filter(e => e.id !== id);
+    renderEntries();
+  }catch(e){
+    console.error(e);
+    alert('削除できませんでした。通信状況を確認してもう一度お試しください。');
+  }
 }
 async function addFollowup(id, text){
   const target = data.logs.find(e => e.id === id);
   if(!target || !text.trim()) return;
-  target.followups.push({ text: text.trim(), ts: new Date().toISOString() });
-  renderEntries();
-  await saveData();
+  const newFollowups = [...target.followups, { text: text.trim(), ts: new Date().toISOString() }];
+  try{
+    await sb(`logs?id=eq.${id}`, { method:'PATCH', body: JSON.stringify({ followups: newFollowups }), prefer:'return=minimal' });
+    target.followups = newFollowups;
+    renderEntries();
+  }catch(e){
+    console.error(e);
+  }
 }
 
 function renderEntries(){
   const list = document.getElementById('entryList');
-  if(data.logs.length === 0){
+  const filtered = currentFilter === 'all' ? data.logs : data.logs.filter(e => e.type === currentFilter);
+  if(filtered.length === 0){
     list.innerHTML = '<div class="empty">まだ記録がありません</div>';
     return;
   }
   const groups = {}; const order = [];
-  data.logs.forEach(e => {
+  filtered.forEach(e => {
     const key = formatDay(new Date(e.ts));
     if(!groups[key]){ groups[key]=[]; order.push(key); }
     groups[key].push(e);
@@ -452,17 +544,27 @@ function renderEntries(){
   order.forEach(key => {
     html += `<div class="day-label">${key}</div>`;
     groups[key].forEach(e => {
+      const isEditing = e.id === editingId;
       html += `
         <div class="card-row" data-id="${e.id}">
           <div class="card-head">
             <span class="tag ${e.type}">${typeLabel(e.type)}</span>
             <div class="row-body">
-              <div class="row-text"></div>
-              <div class="row-time">${formatTime(new Date(e.ts))}</div>
+              ${isEditing
+                ? `<textarea class="edit-area" data-edit-input="${e.id}"></textarea>
+                   <div class="edit-actions">
+                     <button class="edit-cancel" data-edit-cancel="${e.id}">キャンセル</button>
+                     <button class="edit-save" data-edit-save="${e.id}">保存</button>
+                   </div>`
+                : `<div class="row-text"></div>
+                   <div class="row-time">${formatTime(new Date(e.ts))}</div>`
+              }
             </div>
-            <button class="row-del" data-id="${e.id}">×</button>
+            ${isEditing ? '' : `
+              <button class="row-edit" data-id="${e.id}">✎</button>
+              <button class="row-del" data-id="${e.id}">×</button>`}
           </div>
-          ${e.type==='moya' ? `<div class="followups" data-fid="${e.id}"></div>
+          ${(e.type==='moya' && !isEditing) ? `<div class="followups" data-fid="${e.id}"></div>
             <div class="followup-add">
               <input type="text" placeholder="後で思ったことを追記" data-fid-input="${e.id}">
               <button data-fid-btn="${e.id}">追記</button>
@@ -473,9 +575,14 @@ function renderEntries(){
   list.innerHTML = html;
 
   // テキストは textContent で安全に挿入
-  data.logs.forEach(e => {
+  filtered.forEach(e => {
     const row = list.querySelector(`.card-row[data-id="${e.id}"]`);
     if(!row) return;
+    if(e.id === editingId){
+      const ta = row.querySelector(`[data-edit-input="${e.id}"]`);
+      if(ta) ta.value = e.text;
+      return;
+    }
     row.querySelector('.row-text').textContent = e.text;
     if(e.type === 'moya'){
       const fWrap = row.querySelector(`.followups[data-fid="${e.id}"]`);
@@ -495,6 +602,31 @@ function renderEntries(){
   });
 
   list.querySelectorAll('.row-del').forEach(b => b.addEventListener('click', () => deleteEntry(b.dataset.id)));
+  list.querySelectorAll('.row-edit').forEach(b => b.addEventListener('click', () => {
+    editingId = b.dataset.id;
+    renderEntries();
+  }));
+  list.querySelectorAll('[data-edit-cancel]').forEach(b => b.addEventListener('click', () => {
+    editingId = null;
+    renderEntries();
+  }));
+  list.querySelectorAll('[data-edit-save]').forEach(b => b.addEventListener('click', async () => {
+    const id = b.dataset.editSave;
+    const ta = list.querySelector(`[data-edit-input="${id}"]`);
+    const newText = ta.value.trim();
+    if(newText){
+      try{
+        await sb(`logs?id=eq.${id}`, { method:'PATCH', body: JSON.stringify({ text: newText }), prefer:'return=minimal' });
+        const target = data.logs.find(e => e.id === id);
+        if(target) target.text = newText;
+      }catch(e){
+        console.error(e);
+        alert('保存できませんでした。通信状況を確認してもう一度お試しください。');
+      }
+    }
+    editingId = null;
+    renderEntries();
+  }));
   list.querySelectorAll('[data-fid-btn]').forEach(b => {
     b.addEventListener('click', () => {
       const id = b.dataset.fidBtn;
@@ -510,13 +642,18 @@ document.getElementById('addTask').addEventListener('click', async () => {
   const input = document.getElementById('taskText');
   const text = input.value.trim();
   if(!text) return;
-  data.tasks.unshift({
-    id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
-    text, status: 'todo', ts: new Date().toISOString()
-  });
-  input.value = '';
-  renderTasks();
-  await saveData();
+  try{
+    const [row] = await sb('tasks', {
+      method:'POST',
+      body: JSON.stringify({ text, status: 'todo', ts: new Date().toISOString() })
+    });
+    data.tasks.unshift(row);
+    input.value = '';
+    renderTasks();
+  }catch(e){
+    console.error(e);
+    alert('保存できませんでした。通信状況を確認してもう一度お試しください。');
+  }
 });
 
 function cycleStatus(s){ return s==='todo' ? 'doing' : s==='doing' ? 'done' : 'todo'; }
@@ -525,9 +662,14 @@ function statusLabel(s){ return s==='todo' ? '未着手' : s==='doing' ? '進行
 async function toggleTaskStatus(id){
   const t = data.tasks.find(t => t.id === id);
   if(!t) return;
-  t.status = cycleStatus(t.status);
-  renderTasks();
-  await saveData();
+  const newStatus = cycleStatus(t.status);
+  try{
+    await sb(`tasks?id=eq.${id}`, { method:'PATCH', body: JSON.stringify({ status: newStatus }), prefer:'return=minimal' });
+    t.status = newStatus;
+    renderTasks();
+  }catch(e){
+    console.error(e);
+  }
 }
 
 function renderTasks(){
@@ -551,6 +693,122 @@ function renderTasks(){
     row.appendChild(text);
     list.appendChild(row);
   });
+}
+
+// ---- 日記 ----
+document.getElementById('saveDiary').addEventListener('click', async () => {
+  const el = document.getElementById('diaryText');
+  const text = el.value.trim();
+  if(!text) return;
+  const statusEl = document.getElementById('diarySaveStatus');
+  if(statusEl) statusEl.textContent = '保存中…';
+  try{
+    const [row] = await sb('diary', {
+      method:'POST',
+      body: JSON.stringify({ text, ts: new Date().toISOString() })
+    });
+    data.diary.unshift(row);
+    el.value = '';
+    renderDiary();
+    if(statusEl){
+      statusEl.textContent = '保存済み';
+      setTimeout(() => { if(statusEl.textContent === '保存済み') statusEl.textContent = ''; }, 1500);
+    }
+  }catch(e){
+    console.error(e);
+    if(statusEl) statusEl.textContent = '保存できませんでした';
+  }
+});
+
+async function deleteDiary(id){
+  try{
+    await sb(`diary?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
+    data.diary = data.diary.filter(d => d.id !== id);
+    renderDiary();
+  }catch(e){
+    console.error(e);
+    alert('削除できませんでした。通信状況を確認してもう一度お試しください。');
+  }
+}
+
+function renderDiary(){
+  const list = document.getElementById('diaryList');
+  if(data.diary.length === 0){
+    list.innerHTML = '<div class="empty">まだ日記がありません</div>';
+    return;
+  }
+  const groups = {}; const order = [];
+  data.diary.forEach(d => {
+    const key = formatDay(new Date(d.ts));
+    if(!groups[key]){ groups[key]=[]; order.push(key); }
+    groups[key].push(d);
+  });
+  let html = '';
+  order.forEach(key => {
+    html += `<div class="day-label">${key}</div>`;
+    groups[key].forEach(d => {
+      const isEditing = d.id === editingDiaryId;
+      html += `
+        <div class="card-row" data-id="${d.id}">
+          <div class="card-head">
+            <span class="tag diary">日記</span>
+            <div class="row-body">
+              ${isEditing
+                ? `<textarea class="edit-area" data-diary-edit-input="${d.id}"></textarea>
+                   <div class="edit-actions">
+                     <button class="edit-cancel" data-diary-edit-cancel="${d.id}">キャンセル</button>
+                     <button class="edit-save" data-diary-edit-save="${d.id}">保存</button>
+                   </div>`
+                : `<div class="row-text"></div>
+                   <div class="row-time">${formatTime(new Date(d.ts))}</div>`
+              }
+            </div>
+            ${isEditing ? '' : `
+              <button class="row-edit" data-id="${d.id}">✎</button>
+              <button class="row-del" data-id="${d.id}">×</button>`}
+          </div>
+        </div>`;
+    });
+  });
+  list.innerHTML = html;
+
+  data.diary.forEach(d => {
+    const row = list.querySelector(`.card-row[data-id="${d.id}"]`);
+    if(!row) return;
+    if(d.id === editingDiaryId){
+      const ta = row.querySelector(`[data-diary-edit-input="${d.id}"]`);
+      if(ta) ta.value = d.text;
+      return;
+    }
+    row.querySelector('.row-text').textContent = d.text;
+  });
+
+  list.querySelectorAll('.row-del').forEach(b => b.addEventListener('click', () => deleteDiary(b.dataset.id)));
+  list.querySelectorAll('.row-edit').forEach(b => b.addEventListener('click', () => {
+    editingDiaryId = b.dataset.id;
+    renderDiary();
+  }));
+  list.querySelectorAll('[data-diary-edit-cancel]').forEach(b => b.addEventListener('click', () => {
+    editingDiaryId = null;
+    renderDiary();
+  }));
+  list.querySelectorAll('[data-diary-edit-save]').forEach(b => b.addEventListener('click', async () => {
+    const id = b.dataset.diaryEditSave;
+    const ta = list.querySelector(`[data-diary-edit-input="${id}"]`);
+    const newText = ta.value.trim();
+    if(newText){
+      try{
+        await sb(`diary?id=eq.${id}`, { method:'PATCH', body: JSON.stringify({ text: newText }), prefer:'return=minimal' });
+        const target = data.diary.find(d => d.id === id);
+        if(target) target.text = newText;
+      }catch(e){
+        console.error(e);
+        alert('保存できませんでした。通信状況を確認してもう一度お試しください。');
+      }
+    }
+    editingDiaryId = null;
+    renderDiary();
+  }));
 }
 
 // ---- 振り返り ----
@@ -615,13 +873,28 @@ document.getElementById('importBtn').addEventListener('click', async () => {
     if(!parsed || !Array.isArray(parsed.logs) || !Array.isArray(parsed.tasks)){
       throw new Error('形式が違います');
     }
-    data = parsed;
-    await saveData();
-    renderEntries();
-    renderTasks();
+    if(!Array.isArray(parsed.diary)) parsed.diary = [];
+    backupMsg.textContent = '読み込み中…';
+    if(parsed.logs.length){
+      await sb('logs', { method:'POST', prefer:'return=minimal', body: JSON.stringify(
+        parsed.logs.map(l => ({ type: l.type, text: l.text, ts: l.ts, followups: l.followups || [] }))
+      )});
+    }
+    if(parsed.tasks.length){
+      await sb('tasks', { method:'POST', prefer:'return=minimal', body: JSON.stringify(
+        parsed.tasks.map(t => ({ text: t.text, status: t.status, ts: t.ts }))
+      )});
+    }
+    if(parsed.diary.length){
+      await sb('diary', { method:'POST', prefer:'return=minimal', body: JSON.stringify(
+        parsed.diary.map(d => ({ text: d.text, ts: d.ts }))
+      )});
+    }
+    await loadData();
     renderReview();
-    backupMsg.textContent = '読み込みました。';
+    backupMsg.textContent = '読み込みました（今あるデータに追加する形で復元しました）。';
   }catch(e){
+    console.error(e);
     backupMsg.textContent = '読み込めませんでした。貼り付けた内容を確認してください。';
   }
 });
